@@ -1,1 +1,2 @@
 抖音号：北漂程序员返乡建房，自己用AI生成的小工具，专业大佬可验证是否正确
+访问地址：https://ly303550688.github.io/jianfanggongju/
