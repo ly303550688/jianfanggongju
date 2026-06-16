@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自建房小工具集</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    background: linear-gradient(135deg, #0f0c29 0%, #1a1a3e 40%, #24243e 100%);
+    min-height: 100vh;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header {
+    text-align: center;
+    padding: 60px 20px 40px;
+  }
+  .header h1 {
+    font-size: 36px;
+    font-weight: 800;
+    color: #ffd700;
+    letter-spacing: 2px;
+  }
+  .header p {
+    margin-top: 10px;
+    font-size: 15px;
+    color: #8899aa;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 960px;
+    padding: 0 20px 80px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 28px 24px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,215,0,0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .card:hover .card-icon {
+    transform: scale(1.1);
+  }
+
+  .card-icon {
+    font-size: 40px;
+    transition: transform 0.3s ease;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffd700;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: #8899aa;
+    line-height: 1.6;
+  }
+
+  .card-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(255,215,0,0.1);
+    color: #ffd700;
+    border: 1px solid rgba(255,215,0,0.15);
+  }
+
+  .card.coming-soon {
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
+  }
+  .card.coming-soon:hover {
+    transform: none;
+    box-shadow: none;
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
+  }
+  .card.coming-soon .card-title {
+    color: #667788;
+  }
+  .card.coming-soon .tag {
+    background: rgba(102,119,136,0.1);
+    color: #667788;
+    border-color: rgba(102,119,136,0.15);
+  }
+
+  .badge-soon {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(102,119,136,0.2);
+    color: #667788;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 0 20px 40px;
+    font-size: 12px;
+    color: #556677;
+  }
+
+  /* 搜索 */
+  .search-wrap {
+    width: 100%;
+    max-width: 960px;
+    padding: 0 20px 30px;
+  }
+  .search-input {
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: #e0e0e0;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .search-input::placeholder { color: #556677; }
+  .search-input:focus {
+    border-color: rgba(255,215,0,0.4);
+    background: rgba(255,255,255,0.07);
+  }
+
+  @media (max-width: 640px) {
+    .header h1 { font-size: 26px; }
+    .container { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏗️ 自建房小工具集</h1>
+  <p>结构计算 · 设计辅助 · 一键出图</p>
+</div>
+
+<div class="search-wrap">
+  <input class="search-input" id="searchInput" placeholder="🔍 搜索工具..." oninput="filterTools()">
+</div>
+
+<div class="container" id="toolContainer">
+  <!-- 已有工具 -->
+  <a class="card" href="简支梁配筋计算.html">
+    <div class="card-icon">📐</div>
+    <div class="card-title">简支梁配筋计算</div>
+    <div class="card-desc">荷载→内力→配筋全流程计算，支持均布+集中荷载组合，含安全性&经济性评价</div>
+    <div class="card-tags">
+      <span class="tag">结构计算</span>
+      <span class="tag">配筋</span>
+      <span class="tag">简支梁</span>
+    </div>
+  </a>
+
+  <!-- 待开发工具 -->
+  <div class="card coming-soon">
+    <div class="badge-soon">即将上线</div>
+    <div class="card-icon">🏋️</div>
+    <div class="card-title">柱子轴压比计算</div>
+    <div class="card-desc">矩形/圆形柱轴压比验算，配筋率估算</div>
+    <div class="card-tags"><span class="tag">结构计算</span><span class="tag">柱子</span></div>
+  </div>
+
+  <div class="card coming-soon">
+    <div class="badge-soon">即将上线</div>
+    <div class="card-icon">🪨</div>
+    <div class="card-title">基础尺寸估算</div>
+    <div class="card-desc">独立基础/条形基础底面尺寸初估，地基承载力验算</div>
+    <div class="card-tags"><span class="tag">基础</span><span class="tag">地基</span></div>
+  </div>
+
+  <div class="card coming-soon">
+    <div class="badge-soon">即将上线</div>
+    <div class="card-icon">🧱</div>
+    <div class="card-title">砌体承重墙验算</div>
+    <div class="card-desc">高厚比验算、局部受压承载力</div>
+    <div class="card-tags"><span class="tag">砌体</span><span class="tag">墙体</span></div>
+  </div>
+
+  <div class="card coming-soon">
+    <div class="badge-soon">即将上线</div>
+    <div class="card-icon">📏</div>
+    <div class="card-title">板配筋计算</div>
+    <div class="card-desc">单向板/双向板弯矩计算与配筋</div>
+    <div class="card-tags"><span class="tag">楼板</span><span class="tag">配筋</span></div>
+  </div>
+
+  <div class="card coming-soon">
+    <div class="badge-soon">即将上线</div>
+    <div class="card-icon">📋</div>
+    <div class="card-title">钢筋用量统计</div>
+    <div class="card-desc">梁/板/柱钢筋用量汇总，按直径分类统计</div>
+    <div class="card-tags"><span class="tag">统计</span><span class="tag">造价</span></div>
+  </div>
+
+  <div class="card coming-soon">
+    <div class="badge-soon">即将上线</div>
+    <div class="card-icon">🧮</div>
+    <div class="card-title">混凝土方量计算</div>
+    <div class="card-desc">各构件混凝土体积自动汇总</div>
+    <div class="card-tags"><span class="tag">造价</span><span class="tag">方量</span></div>
+  </div>
+</div>
+
+<div class="footer">
+  基于 GB 50010 / GB 50009 / GB 50007 等规范 · 仅供参考，请以专业设计为准
+</div>
+
+<script>
+function filterTools() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const cards = document.querySelectorAll('#toolContainer .card');
+  cards.forEach(card => {
+    const text = (card.textContent || '').toLowerCase();
+    card.style.display = q === '' || text.includes(q) ? '' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
