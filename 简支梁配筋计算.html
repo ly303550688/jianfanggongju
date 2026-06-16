@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简支梁配筋计算工具</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Microsoft YaHei', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height:100vh; padding:20px; color:#fff; }
+.container { max-width:860px; margin:0 auto; }
+.header { text-align:center; padding:30px 20px 20px; }
+.header h1 { font-size:28px; background:linear-gradient(135deg,#ffd700,#ffaa00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:8px; }
+.header .sub { font-size:14px; color:#8899aa; line-height:1.6; }
+.card { background:rgba(255,255,255,0.06); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:24px; margin-bottom:20px; }
+.card-title { font-size:18px; font-weight:700; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid rgba(255,215,0,0.3); display:flex; align-items:center; gap:8px; }
+.card-title .icon { font-size:22px; }
+.form-grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+.form-grid-3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; }
+@media(max-width:600px) { .form-grid, .form-grid-3 { grid-template-columns:1fr; } }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group label { font-size:13px; color:#aabbcc; font-weight:500; }
+.form-group select, .form-group input { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:#fff; padding:10px 14px; font-size:15px; outline:none; transition:all .3s; }
+.form-group select:focus, .form-group input:focus { border-color:#ffd700; box-shadow:0 0 0 3px rgba(255,215,0,0.1); }
+.form-group select option { background:#1a1a2e; color:#fff; }
+.form-group input::placeholder { color:#556677; }
+.form-group input:read-only { background:rgba(255,215,0,0.06); border-color:rgba(255,215,0,0.25); color:#ffd700; cursor:default; }
+.form-group .unit { font-size:12px; color:#667788; }
+.btn-row { display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; }
+.btn { flex:1; min-width:100px; padding:12px 20px; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; transition:all .3s; letter-spacing:1px; }
+.btn-primary { background:linear-gradient(135deg,#ffd700,#ffaa00); color:#1a1a2e; }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(255,215,0,0.3); }
+.btn-secondary { background:rgba(255,255,255,0.08); color:#ffd700; border:1px solid rgba(255,215,0,0.3); }
+.btn-secondary:hover { background:rgba(255,215,0,0.12); }
+.btn-reset { background:rgba(255,255,255,0.1); color:#aabbcc; border:1px solid rgba(255,255,255,0.2); }
+.btn-reset:hover { background:rgba(255,255,255,0.15); color:#fff; }
+.btn-sm { min-width:auto; padding:8px 14px; font-size:12px; flex:none; }
+.btn-danger { background:rgba(255,107,107,0.15); color:#ff6b6b; border:1px solid rgba(255,107,107,0.3); }
+.btn-danger:hover { background:rgba(255,107,107,0.25); }
+
+/* 模式切换 */
+.mode-toggle { display:flex; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden; margin-bottom:20px; }
+.mode-toggle button { flex:1; padding:10px 16px; border:none; background:transparent; color:#8899aa; font-size:14px; font-weight:600; cursor:pointer; transition:all .3s; }
+.mode-toggle button.active { background:rgba(255,215,0,0.15); color:#ffd700; }
+
+/* 荷载表格 */
+.load-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+.load-table th, .load-table td { padding:8px 6px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.06); }
+.load-table th { color:#8899aa; font-weight:600; font-size:12px; }
+.load-table input, .load-table select { width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#fff; padding:6px 8px; font-size:13px; outline:none; text-align:center; }
+.load-table input:focus, .load-table select:focus { border-color:#ffd700; }
+.load-table select option { background:#1a1a2e; }
+.load-table .del-cell { width:40px; }
+.load-calc-result { margin-top:14px; padding:14px; background:rgba(255,215,0,0.06); border-radius:10px; border:1px solid rgba(255,215,0,0.2); }
+.load-calc-result .row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; }
+.load-calc-result .row .lbl { font-size:13px; color:#8899aa; }
+.load-calc-result .row .val { font-size:18px; font-weight:700; color:#ffd700; }
+.load-calc-result .arrow { text-align:center; color:#ffd700; font-size:20px; margin:8px 0; }
+
+/* 结果区 */
+.result-area { display:none; }
+.result-area.show { display:block; }
+.result-item { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; margin-bottom:10px; background:rgba(255,255,255,0.04); border-radius:10px; border-left:4px solid #ffd700; }
+.result-item .label { font-size:14px; color:#8899aa; }
+.result-item .value { font-size:16px; font-weight:700; color:#ffd700; }
+.result-item.warning { border-left-color:#ff6b6b; }
+.result-item.warning .value { color:#ff6b6b; }
+.result-item.success { border-left-color:#4ecdc4; }
+.result-item.success .value { color:#4ecdc4; }
+.result-item.info { border-left-color:#45a7ff; }
+.result-item.info .value { color:#45a7ff; }
+.section-result { margin-top:20px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.08); }
+.section-result h3 { font-size:15px; color:#ffd700; margin-bottom:12px; }
+.rebar-table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+.rebar-table th, .rebar-table td { padding:10px 12px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.08); }
+.rebar-table th { color:#8899aa; font-weight:600; background:rgba(255,255,255,0.03); }
+.rebar-table tr:hover td { background:rgba(255,215,0,0.05); }
+.rebar-table .highlight { color:#ffd700; font-weight:700; }
+.formula-box { background:rgba(0,0,0,0.3); border-radius:10px; padding:14px 18px; margin-top:12px; font-size:13px; color:#aabbcc; line-height:1.8; font-family:Consolas, monospace; }
+.formula-box span { display:block; }
+.footer { text-align:center; padding:20px; font-size:12px; color:#556677; }
+.note { font-size:12px; color:#667788; margin-top:8px; padding:10px; background:rgba(69,167,255,0.08); border-radius:8px; border-left:3px solid #45a7ff; }
+
+.check-row { display:flex; align-items:center; gap:12px; }
+.check-row input[type="checkbox"] { width:18px; height:18px; accent-color:#ffd700; cursor:pointer; }
+.check-row label { font-size:13px; color:#aabbcc; cursor:pointer; }
+
+/* 内力计算结果样式 */
+.mv-display { display:flex; gap:16px; margin-top:12px; }
+.mv-box { flex:1; background:rgba(0,0,0,0.3); border-radius:12px; padding:16px; text-align:center; border:1px solid rgba(255,255,255,0.08); }
+.mv-box .mv-label { font-size:12px; color:#8899aa; margin-bottom:4px; }
+.mv-box .mv-value { font-size:24px; font-weight:800; color:#ffd700; }
+.mv-box .mv-unit { font-size:12px; color:#667788; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🏗️ 简支梁配筋计算工具</h1>
+    <div class="sub">荷载计算 → 内力分析 → 正截面受弯 + 斜截面受剪 | 依据 GB 50010-2010</div>
+  </div>
+
+  <!-- ==================== 荷载与内力计算卡片 ==================== -->
+  <div class="card" id="loadCard">
+    <div class="card-title"><span class="icon">📐</span> 第一步：荷载与内力计算</div>
+
+    <!-- 计算跨度 -->
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="form-group">
+        <label>计算跨度 L (m)</label>
+        <input type="number" id="spanL" value="6.0" step="0.1" min="0.5" placeholder="如：6.0" onchange="calcLoads()">
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <div class="check-row" style="margin-top:6px;">
+          <input type="checkbox" id="includeSelfWeight" checked onchange="calcLoads()">
+          <label>计入梁自重 (γ=25 kN/m³)</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 均布荷载 -->
+    <div style="font-size:14px;color:#ffd700;font-weight:600;margin-bottom:10px;">📊 均布荷载（满跨）</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>恒载标准值 g_k (kN/m) <span class="unit">不含自重</span></label>
+        <input type="number" id="gk" value="8.0" step="0.1" min="0" placeholder="如：8.0" onchange="calcLoads()">
+      </div>
+      <div class="form-group">
+        <label>活载标准值 q_k (kN/m)</label>
+        <input type="number" id="qk" value="5.0" step="0.1" min="0" placeholder="如：5.0" onchange="calcLoads()">
+      </div>
+    </div>
+
+    <!-- 集中荷载 -->
+    <div style="font-size:14px;color:#ffd700;font-weight:600;margin:16px 0 10px;display:flex;align-items:center;gap:12px;">
+      📍 集中荷载
+      <button class="btn btn-sm btn-secondary" onclick="addPointLoad()">＋ 添加</button>
+    </div>
+    <table class="load-table" id="pointLoadTable">
+      <thead>
+        <tr><th>类型</th><th>大小 P (kN)</th><th>距左支座 a (m)</th><th>M 贡献 (kN·m)</th><th>V 贡献 (kN)</th><th></th></tr>
+      </thead>
+      <tbody id="pointLoadBody">
+      </tbody>
+    </table>
+
+    <!-- 荷载组合说明 -->
+    <div class="note" style="margin-top:12px;">
+      💡 荷载组合：设计值 = 1.3 × 恒载标准值 + 1.5 × 活载标准值（基本组合）
+    </div>
+
+    <!-- 荷载取值参考（可折叠） -->
+    <div style="margin-top:14px;">
+      <button class="btn btn-sm btn-secondary" onclick="toggleLoadRef()" style="width:100%;text-align:left;">
+        📖 荷载取值参考（g_k、q_k 怎么来的？点击展开）
+      </button>
+      <div id="loadRefPanel" style="display:none;margin-top:10px;">
+        <div class="formula-box" style="font-family:'Microsoft YaHei',sans-serif;font-size:12px;line-height:1.6;">
+          <span style="color:#ffd700;font-weight:700;">【概念】g_k 和 q_k 是梁上的线荷载（kN/m），由楼面面荷载 × 受荷宽度得来</span>
+          <span>　g_k = 楼面恒载(kN/m²) × 受荷宽度(m) + 墙体线荷载(kN/m)</span>
+          <span>　q_k = 楼面活载(kN/m²) × 受荷宽度(m)</span>
+          <span>　受荷宽度 = 梁两侧各取一半板跨之和（通常取轴线间距）</span>
+          <span></span>
+          <span style="color:#ffd700;font-weight:700;">【快速估算器】</span>
+          <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;">
+            楼面恒载<input type="number" id="refFloorDead" value="4.5" step="0.1" min="0" onchange="updateRefCalc()" style="width:70px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#ffd700;padding:4px 8px;font-size:12px;text-align:center;">kN/m² ×
+            受荷宽度<input type="number" id="refTribWidth" value="3.0" step="0.1" min="0" onchange="updateRefCalc()" style="width:70px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#ffd700;padding:4px 8px;font-size:12px;text-align:center;">m +
+            墙荷载<input type="number" id="refWallLoad" value="0" step="0.1" min="0" onchange="updateRefCalc()" style="width:70px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#ffd700;padding:4px 8px;font-size:12px;text-align:center;">kN/m =
+            <b style="color:#ffd700;" id="refGkResult">--</b> kN/m
+            <button class="btn btn-sm btn-secondary" onclick="applyRefGk()" style="margin-left:4px;">填入 g_k</button>
+          </span>
+          <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;">
+            楼面活载<input type="number" id="refFloorLive" value="2.0" step="0.1" min="0" onchange="updateRefCalc()" style="width:70px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#ffd700;padding:4px 8px;font-size:12px;text-align:center;">kN/m² ×
+            受荷宽度<input type="number" id="refTribWidth2" value="3.0" step="0.1" min="0" onchange="updateRefCalc()" style="width:70px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#ffd700;padding:4px 8px;font-size:12px;text-align:center;">m =
+            <b style="color:#ffd700;" id="refQkResult">--</b> kN/m
+            <button class="btn btn-sm btn-secondary" onclick="applyRefQk()" style="margin-left:4px;">填入 q_k</button>
+          </span>
+          <span></span>
+          <span style="color:#ffd700;font-weight:700;">【常用楼面恒载参考】(kN/m²)</span>
+          <span>　普通住宅楼面（地砖+找平+天棚）：4.0 ~ 4.5</span>
+          <span>　屋面（防水+保温+找坡+天棚） ：5.5 ~ 7.0</span>
+          <span>　卫生间（下沉式）　　　　　　：6.0 ~ 8.0</span>
+          <span>　车库顶板（覆土1.5m）　　　　：30 ~ 35</span>
+          <span></span>
+          <span style="color:#ffd700;font-weight:700;">【常用活载标准值参考】(kN/m²) — GB 50009</span>
+          <span>　住宅、宿舍、办公楼　　　　：2.0</span>
+          <span>　教室、餐厅、会议室　　　　：2.5</span>
+          <span>　商场、展览厅　　　　　　　：3.5</span>
+          <span>　不上人屋面　　　　　　　　：0.5</span>
+          <span>　上人屋面　　　　　　　　　：2.0</span>
+          <span>　楼梯、阳台　　　　　　　　：2.5 ~ 3.5</span>
+          <span>　书库、储藏室　　　　　　　：5.0</span>
+          <span></span>
+          <span style="color:#ffd700;font-weight:700;">【常用墙体线荷载】(kN/m) — 按墙高×面载估算</span>
+          <span>　120砖墙双面粉刷：约 3.0 kN/m² → 3m高 = 9 kN/m</span>
+          <span>　240砖墙双面粉刷：约 5.2 kN/m² → 3m高 = 15.6 kN/m</span>
+          <span>　加气混凝土砌块(200)：约 2.0 kN/m² → 3m高 = 6 kN/m</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 内力计算结果 -->
+    <div class="load-calc-result" id="loadCalcResult">
+      <div style="font-size:14px;color:#ffd700;font-weight:600;margin-bottom:10px;">📈 简支梁内力计算结果</div>
+      <div id="loadProcess"></div>
+      <div class="mv-display">
+        <div class="mv-box">
+          <div class="mv-label">跨中最大弯矩 M</div>
+          <div class="mv-value" id="mvM">--</div>
+          <div class="mv-unit">kN·m</div>
+        </div>
+        <div class="mv-box">
+          <div class="mv-label">支座最大剪力 V</div>
+          <div class="mv-value" id="mvV">--</div>
+          <div class="mv-unit">kN</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:14px;">
+        <button class="btn btn-primary" onclick="useLoadResult()" style="max-width:260px;">⬇ 应用到配筋计算</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 设计参数卡片 ==================== -->
+  <div class="card">
+    <div class="card-title"><span class="icon">🔧</span> 第二步：设计参数输入</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>截面宽度 b (mm)</label>
+        <input type="number" id="b" value="250" step="10" min="100" placeholder="如：250">
+      </div>
+      <div class="form-group">
+        <label>截面高度 h (mm)</label>
+        <input type="number" id="h" value="500" step="10" min="100" placeholder="如：500" onchange="calcLoads()">
+      </div>
+      <div class="form-group">
+        <label>保护层厚度 aₛ (mm)</label>
+        <input type="number" id="as" value="35" step="1" min="15" placeholder="如：35">
+      </div>
+      <div class="form-group">
+        <label>弯矩设计值 M (kN·m)</label>
+        <input type="number" id="M" value="120" step="1" min="0" placeholder="如：120">
+      </div>
+      <div class="form-group">
+        <label>剪力设计值 V (kN)</label>
+        <input type="number" id="V" value="100" step="1" min="0" placeholder="如：100">
+      </div>
+      <div class="form-group">
+        <label>混凝土强度等级</label>
+        <select id="concreteGrade">
+          <option value="C20">C20 (fc=9.6, ft=1.10)</option>
+          <option value="C25">C25 (fc=11.9, ft=1.27)</option>
+          <option value="C30" selected>C30 (fc=14.3, ft=1.43)</option>
+          <option value="C35">C35 (fc=16.7, ft=1.57)</option>
+          <option value="C40">C40 (fc=19.1, ft=1.71)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>纵筋级别</label>
+        <select id="steelGradeLong">
+          <option value="HPB300">HPB300 (fy=270)</option>
+          <option value="HRB335">HRB335 (fy=300)</option>
+          <option value="HRB400" selected>HRB400 (fy=360)</option>
+          <option value="HRB500">HRB500 (fy=435)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>箍筋级别</label>
+        <select id="steelGradeStirrup">
+          <option value="HPB300" selected>HPB300 (fyv=270)</option>
+          <option value="HRB335">HRB335 (fyv=300)</option>
+          <option value="HRB400">HRB400 (fyv=360)</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="calculate()">⚡ 开始配筋计算</button>
+      <button class="btn btn-reset" onclick="resetForm()">🔄 重置全部</button>
+      <button class="btn btn-reset" onclick="loadExample1()">📋 示例一</button>
+      <button class="btn btn-reset" onclick="loadExample2()">📋 示例二</button>
+    </div>
+  </div>
+
+  <!-- 计算中间过程卡片 -->
+  <div class="card" id="processCard" style="display:none;">
+    <div class="card-title"><span class="icon">📝</span> 第三步：配筋计算过程</div>
+    <div id="processContent"></div>
+  </div>
+
+  <!-- 计算结果卡片 -->
+  <div class="card result-area" id="resultCard">
+    <div class="card-title"><span class="icon">✅</span> 第四步：计算结果与配筋方案</div>
+    <div id="resultContent"></div>
+    <div class="section-result" id="rebarSection" style="display:none;">
+      <h3>🔩 推荐配筋方案</h3>
+      <div id="rebarScheme"></div>
+    </div>
+  </div>
+
+  <!-- 公式参考 -->
+  <div class="card" style="display:none;" id="formulaCard">
+    <div class="card-title"><span class="icon">📚</span> 计算公式参考</div>
+    <div class="formula-box">
+      <span>【内力计算 - 简支梁】</span>
+      <span>均布荷载：M_max = q·L²/8，V_max = q·L/2</span>
+      <span>集中荷载：M = P·a·b/L，V_left = P·b/L，V_right = P·a/L</span>
+      <span>（跨中集中力：M_max = P·L/4，V_max = P/2）</span>
+      <span>荷载组合：设计值 = 1.3×恒载 + 1.5×活载</span>
+      <span>━━━━━━━━━━━━━━━━━━━━━━━━</span>
+      <span>【正截面受弯承载力 - 单筋矩形截面】</span>
+      <span>αₛ = M / (α₁·f_c·b·h₀²)</span>
+      <span>ξ = 1 − √(1 − 2αₛ) ≤ ξ_b</span>
+      <span>Aₛ = α₁·f_c·b·ξ·h₀ / f_y</span>
+      <span>ρ_min = Max(0.2%, 0.45·f_t/f_y)</span>
+      <span>━━━━━━━━━━━━━━━━━━━━━━━━</span>
+      <span>【斜截面受剪承载力 - 仅配箍筋】</span>
+      <span>截面验算：V ≤ 0.25·β_c·f_c·b·h₀</span>
+      <span>若不需计算配箍：V ≤ 0.7·f_t·b·h₀（构造配箍）</span>
+      <span>Aₛᵥ/s = (V − 0.7·f_t·b·h₀) / (f_yv·h₀)</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    此工具仅供学习参考，实际工程设计请以规范为准 | 基于 GB 50010-2010 混凝土结构设计规范
+  </div>
+</div>
+
+<script>
+// ==================== 材料属性数据库 ====================
+const CONCRETE = {
+  C20: { fc:9.6, ft:1.10, Ec:2.55e4, α1:1.0, βc:1.0 },
+  C25: { fc:11.9, ft:1.27, Ec:2.80e4, α1:1.0, βc:1.0 },
+  C30: { fc:14.3, ft:1.43, Ec:3.00e4, α1:1.0, βc:1.0 },
+  C35: { fc:16.7, ft:1.57, Ec:3.15e4, α1:1.0, βc:1.0 },
+  C40: { fc:19.1, ft:1.71, Ec:3.25e4, α1:1.0, βc:1.0 },
+};
+
+const STEEL = {
+  HPB300: { fy:270, fyv:270, ξb:0.576, Es:2.1e5 },
+  HRB335: { fy:300, fyv:300, ξb:0.550, Es:2.0e5 },
+  HRB400: { fy:360, fyv:360, ξb:0.518, Es:2.0e5 },
+  HRB500: { fy:435, fyv:435, ξb:0.482, Es:2.0e5 },
+};
+
+const REBAR_AREA = {
+  6:28.3, 8:50.3, 10:78.5, 12:113.1, 14:153.9, 16:201.1, 18:254.5, 20:314.2, 22:380.1, 25:490.9, 28:615.8, 32:804.2
+};
+
+// 荷载组合系数
+const γ_G = 1.3;  // 恒载分项系数
+const γ_Q = 1.5;  // 活载分项系数
+
+// ==================== 荷载与内力计算 ====================
+let pointLoadId = 0;
+let storedPointLoads = [];  // 存储集中荷载数据
+
+function addPointLoad(defaultType, defaultP, defaultA) {
+  const id = ++pointLoadId;
+  const type = defaultType || 'live';
+  const p = defaultP || 0;
+  const a = defaultA || '';
+  const row = document.createElement('tr');
+  row.id = 'pload-row-' + id;
+  row.innerHTML = `
+    <td>
+      <select id="pload-type-${id}" onchange="calcLoads()">
+        <option value="dead" ${type==='dead'?'selected':''}>恒载</option>
+        <option value="live" ${type==='live'?'selected':''}>活载</option>
+      </select>
+    </td>
+    <td><input type="number" id="pload-p-${id}" value="${p}" step="0.1" min="0" placeholder="kN" onchange="calcLoads()"></td>
+    <td><input type="number" id="pload-a-${id}" value="${a}" step="0.01" min="0" placeholder="m" onchange="calcLoads()"></td>
+    <td id="pload-m-${id}" style="color:#8899aa;">--</td>
+    <td id="pload-v-${id}" style="color:#8899aa;">--</td>
+    <td class="del-cell"><button class="btn btn-sm btn-danger" onclick="removePointLoad(${id})">✕</button></td>
+  `;
+  document.getElementById('pointLoadBody').appendChild(row);
+  if (p > 0 && a !== '') calcLoads();
+}
+
+function removePointLoad(id) {
+  const row = document.getElementById('pload-row-' + id);
+  if (row) row.remove();
+  calcLoads();
+}
+
+function collectPointLoads() {
+  const loads = [];
+  const rows = document.getElementById('pointLoadBody').children;
+  for (const row of rows) {
+    const id = row.id.replace('pload-row-', '');
+    const typeEl = document.getElementById('pload-type-' + id);
+    const pEl = document.getElementById('pload-p-' + id);
+    const aEl = document.getElementById('pload-a-' + id);
+    if (!typeEl || !pEl || !aEl) continue;
+    const type = typeEl.value;
+    const P = parseFloat(pEl.value) || 0;
+    const a = parseFloat(aEl.value);
+    if (P > 0 && !isNaN(a) && a >= 0) {
+      loads.push({ id, type, P, a });
+    }
+  }
+  storedPointLoads = loads;
+  return loads;
+}
+
+// 计算简支梁在荷载作用下的弯矩和剪力
+function calcLoads() {
+  const L = parseFloat(document.getElementById('spanL').value) || 0;
+  if (L <= 0) {
+    document.getElementById('loadProcess').innerHTML = '<span style="color:#ff6b6b;">请输入有效的计算跨度 L</span>';
+    document.getElementById('mvM').textContent = '--';
+    document.getElementById('mvV').textContent = '--';
+    return;
+  }
+
+  const gk = parseFloat(document.getElementById('gk').value) || 0;
+  const qk = parseFloat(document.getElementById('qk').value) || 0;
+  const includeSW = document.getElementById('includeSelfWeight').checked;
+
+  // 计算自重
+  const b_m = parseFloat(document.getElementById('b').value) / 1000 || 0;
+  const h_m = parseFloat(document.getElementById('h').value) / 1000 || 0;
+  const selfWeight = includeSW ? b_m * h_m * 25 : 0; // kN/m
+
+  // 总均布恒载标准值
+  const gk_total = gk + selfWeight;
+
+  // 均布荷载产生的 M 和 V（设计值）
+  const M_uniform_design = (γ_G * gk_total + γ_Q * qk) * L * L / 8;
+  const V_uniform_design = (γ_G * gk_total + γ_Q * qk) * L / 2;
+
+  // 均布荷载标准值贡献（用于展示）
+  const M_gk_uniform = gk_total * L * L / 8;
+  const M_qk_uniform = qk * L * L / 8;
+  const V_gk_uniform = gk_total * L / 2;
+  const V_qk_uniform = qk * L / 2;
+
+  // 集中荷载
+  const pointLoads = collectPointLoads();
+  let M_point_design = 0;
+  let V_point_design = 0;
+  let M_point_gk = 0, M_point_qk = 0;
+
+  for (const pl of pointLoads) {
+    const a = pl.a;
+    const b = L - a;
+    if (b <= 0) continue;
+    const M_i = pl.P * a * b / L;       // 该集中力产生的跨中（实际是作用点）弯矩
+    // 对于多个集中力，最大弯矩近似取各力贡献之和（保守）
+    // V 取较大一侧的剪力
+    const V_left = pl.P * b / L;
+    const V_right = pl.P * a / L;
+    const V_i = Math.max(V_left, V_right);
+
+    const factor = pl.type === 'dead' ? γ_G : γ_Q;
+    M_point_design += factor * M_i;
+    V_point_design += factor * V_i;
+
+    if (pl.type === 'dead') M_point_gk += M_i;
+    else M_point_qk += M_i;
+
+    // 更新该行的贡献值
+    const mEl = document.getElementById('pload-m-' + pl.id);
+    const vEl = document.getElementById('pload-v-' + pl.id);
+    if (mEl) mEl.textContent = M_i.toFixed(2);
+    if (vEl) vEl.textContent = V_i.toFixed(2);
+  }
+
+  // 总设计值
+  const M_total = M_uniform_design + M_point_design;
+  const V_total = V_uniform_design + V_point_design;
+
+  // 显示内力
+  document.getElementById('mvM').textContent = M_total.toFixed(2);
+  document.getElementById('mvV').textContent = V_total.toFixed(2);
+
+  // 渲染荷载计算过程
+  let html = '';
+  html += `<div class="formula-box">`;
+
+  // 自重
+  if (includeSW) {
+    html += `<span>梁自重 = b×h×25 = ${b_m.toFixed(3)}×${h_m.toFixed(3)}×25 = <b style="color:#ffd700">${selfWeight.toFixed(2)} kN/m</b></span>`;
+    html += `<span>总恒载标准值 g_k = ${gk} + ${selfWeight.toFixed(2)}(自重) = <b style="color:#ffd700">${gk_total.toFixed(2)} kN/m</b></span>`;
+  } else {
+    html += `<span>总恒载标准值 g_k = ${gk} kN/m（不含自重）</span>`;
+  }
+  html += `<span></span>`;
+
+  // 均布荷载
+  html += `<span>【均布荷载内力 - 标准值】</span>`;
+  html += `<span>　M_gk = g_k·L²/8 = ${gk_total.toFixed(2)} × ${L}² / 8 = ${M_gk_uniform.toFixed(2)} kN·m</span>`;
+  html += `<span>　M_qk = q_k·L²/8 = ${qk} × ${L}² / 8 = ${M_qk_uniform.toFixed(2)} kN·m</span>`;
+  html += `<span>　V_gk = g_k·L/2 = ${gk_total.toFixed(2)} × ${L} / 2 = ${V_gk_uniform.toFixed(2)} kN</span>`;
+  html += `<span>　V_qk = q_k·L/2 = ${qk} × ${L} / 2 = ${V_qk_uniform.toFixed(2)} kN</span>`;
+  html += `<span></span>`;
+  html += `<span>【均布荷载内力 - 设计值】</span>`;
+  html += `<span>　M_均设计 = 1.3×${M_gk_uniform.toFixed(2)} + 1.5×${M_qk_uniform.toFixed(2)} = <b style="color:#ffd700">${M_uniform_design.toFixed(2)} kN·m</b></span>`;
+  html += `<span>　V_均设计 = 1.3×${V_gk_uniform.toFixed(2)} + 1.5×${V_qk_uniform.toFixed(2)} = <b style="color:#ffd700">${V_uniform_design.toFixed(2)} kN</b></span>`;
+
+  // 集中荷载
+  if (pointLoads.length > 0) {
+    html += `<span></span>`;
+    html += `<span>【集中荷载内力 - 设计值】</span>`;
+    html += `<span>　M_集设计 = ${M_point_design.toFixed(2)} kN·m</span>`;
+    html += `<span>　V_集设计 = ${V_point_design.toFixed(2)} kN</span>`;
+  }
+
+  html += `<span></span>`;
+  html += `<span>━━━━━━━━━━━━━━━━━━━━━━</span>`;
+  html += `<span><b style="color:#ffd700;">合计：M = ${M_total.toFixed(2)} kN·m，V = ${V_total.toFixed(2)} kN</b></span>`;
+  html += `</div>`;
+
+  document.getElementById('loadProcess').innerHTML = html;
+
+  return { M: M_total, V: V_total };
+}
+
+function useLoadResult() {
+  const result = calcLoads();
+  if (!result) return;
+  document.getElementById('M').value = result.M.toFixed(2);
+  document.getElementById('V').value = result.V.toFixed(2);
+  // 高亮闪烁效果
+  const mEl = document.getElementById('M');
+  const vEl = document.getElementById('V');
+  mEl.style.borderColor = '#ffd700';
+  vEl.style.borderColor = '#ffd700';
+  mEl.style.boxShadow = '0 0 20px rgba(255,215,0,0.3)';
+  vEl.style.boxShadow = '0 0 20px rgba(255,215,0,0.3)';
+  setTimeout(() => {
+    mEl.style.borderColor = 'rgba(255,215,0,0.25)';
+    vEl.style.borderColor = 'rgba(255,215,0,0.25)';
+    mEl.style.boxShadow = 'none';
+    vEl.style.boxShadow = 'none';
+  }, 1500);
+  // 滚动到参数区
+  document.getElementById('M').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ==================== 配筋计算 ====================
+function getConcrete() { return CONCRETE[document.getElementById('concreteGrade').value]; }
+function getSteelLong() { return STEEL[document.getElementById('steelGradeLong').value]; }
+function getSteelStirrup() { return STEEL[document.getElementById('steelGradeStirrup').value]; }
+
+function getInputs() {
+  return {
+    b: parseFloat(document.getElementById('b').value) || 0,
+    h: parseFloat(document.getElementById('h').value) || 0,
+    a_s: parseFloat(document.getElementById('as').value) || 0,
+    M: parseFloat(document.getElementById('M').value) || 0,
+    V: parseFloat(document.getElementById('V').value) || 0,
+  };
+}
+
+function calculate() {
+  const inp = getInputs();
+  if (inp.b <= 0 || inp.h <= 0 || inp.a_s < 0 || inp.M < 0 || inp.V < 0) {
+    alert('请输入有效的正数参数！');
+    return;
+  }
+  if (inp.a_s >= inp.h) { alert('保护层厚度 aₛ 不能大于等于截面高度 h！'); return; }
+
+  const conc = getConcrete();
+  const steelL = getSteelLong();
+  const steelS = getSteelStirrup();
+  const h0 = inp.h - inp.a_s;
+  const M_nmm = inp.M * 1e6;
+  const V_N    = inp.V * 1e3;
+
+  // 正截面受弯
+  const α1 = conc.α1, fc = conc.fc, ft = conc.ft;
+  const fy = steelL.fy, ξb = steelL.ξb;
+  const αs_val = M_nmm / (α1 * fc * inp.b * h0 * h0);
+  const ξ_val  = 1 - Math.sqrt(Math.max(0, 1 - 2 * αs_val));
+  const x_val  = ξ_val * h0;
+
+  let status = 'ok', statusMsg = '';
+  if (ξ_val > ξb) { status = 'over'; statusMsg = `ξ = ${ξ_val.toFixed(4)} > ξ_b = ${ξb}，超筋！请加大截面或提高混凝土等级`; }
+  else if (ξ_val < 0) { status = 'error'; statusMsg = '计算异常，请检查输入参数'; }
+
+  const As_req = (status === 'ok') ? α1 * fc * inp.b * x_val / fy : 0;
+  const ρ = (status === 'ok') ? As_req / (inp.b * h0) : 0;
+  const ρ_min1 = 0.002;
+  const ρ_min2 = 0.45 * ft / fy;
+  const ρ_min = Math.max(ρ_min1, ρ_min2);
+  const As_min = ρ_min * inp.b * h0;
+
+  // 斜截面受剪
+  const fyv = steelS.fyv;
+  const Vc = 0.7 * ft * inp.b * h0;
+  const Vu_max = 0.25 * conc.βc * fc * inp.b * h0;
+
+  let shearStatus = 'ok', shearMsg = '', Asv_s = 0;
+  if (V_N > Vu_max) {
+    shearStatus = 'size_err';
+    shearMsg = `V = ${V_N.toFixed(0)} N > 0.25β_c·f_c·b·h₀ = ${Vu_max.toFixed(0)} N，截面尺寸不足！请加大截面`;
+  } else if (V_N <= Vc) {
+    shearStatus = 'constr';
+    shearMsg = `V ≤ 0.7·f_t·b·h₀ = ${Vc.toFixed(0)} N，按构造配箍即可`;
+  } else {
+    Asv_s = (V_N - Vc) / (fyv * h0);
+  }
+
+  renderProcess(inp, conc, steelL, steelS, h0, M_nmm, V_N, α1, fc, ft, fy, fyv, ξb,
+    αs_val, ξ_val, x_val, As_req, ρ, ρ_min, As_min, status, statusMsg,
+    Vc, Vu_max, Asv_s, shearStatus, shearMsg);
+  renderResult(inp, conc, steelL, steelS, h0, As_req, As_min, ρ, ρ_min, ξ_val, ξb, fy,
+    status, statusMsg, Vc, Vu_max, Asv_s, shearStatus, shearMsg, V_N);
+
+  document.getElementById('resultCard').classList.add('show');
+  document.getElementById('processCard').style.display = 'block';
+  document.getElementById('formulaCard').style.display = 'block';
+  document.getElementById('rebarSection').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderProcess(inp, conc, steelL, steelS, h0, M_nmm, V_N, α1, fc, ft, fy, fyv, ξb,
+  αs_val, ξ_val, x_val, As_req, ρ, ρ_min, As_min, status, statusMsg,
+  Vc, Vu_max, Asv_s, shearStatus, shearMsg) {
+  let html = '';
+  html += `<div style="margin-bottom:16px;font-size:14px;color:#ffd700;font-weight:700;">一、基本参数</div>`;
+  html += `<div class="formula-box">`;
+  html += `<span>h₀ = h − aₛ = ${inp.h} − ${inp.a_s} = <b style="color:#ffd700">${h0} mm</b></span>`;
+  html += `<span></span>`;
+  html += `<span>【混凝土】${document.getElementById('concreteGrade').value}：f_c = ${fc} N/mm²，f_t = ${ft} N/mm²，α₁ = ${α1}</span>`;
+  html += `<span>【纵筋】${document.getElementById('steelGradeLong').value}：f_y = ${fy} N/mm²，ξ_b = ${ξb}</span>`;
+  html += `<span>【箍筋】${document.getElementById('steelGradeStirrup').value}：f_yv = ${fyv} N/mm²</span>`;
+  html += `</div>`;
+
+  html += `<div style="margin:16px 0;font-size:14px;color:#ffd700;font-weight:700;">二、正截面受弯承载力计算（纵向钢筋）</div>`;
+  html += `<div class="formula-box">`;
+  html += `<span>① αₛ = M / (α₁·f_c·b·h₀²)</span>`;
+  html += `<span>　 = ${M_nmm.toExponential(2)} / (${α1} × ${fc} × ${inp.b} × ${h0}²)</span>`;
+  html += `<span>　 = <b style="color:${αs_val>0.399?'#ff6b6b':'#ffd700'}">${αs_val.toFixed(4)}</b></span>`;
+  if (αs_val > 0.399) html += `<span style="color:#ff6b6b;">⚠ αₛ > αs_max ≈ 0.399，需采用双筋截面</span>`;
+  html += `<span></span>`;
+  html += `<span>② ξ = 1 − √(1 − 2αₛ) = 1 − √(1 − 2×${αs_val.toFixed(4)})</span>`;
+  html += `<span>　 = <b style="color:#ffd700">${ξ_val.toFixed(4)}</b></span>`;
+  html += `<span></span>`;
+  html += `<span>③ 验算：ξ = ${ξ_val.toFixed(4)} ≤ ξ_b = ${ξb}  →  ${status==='ok'?'<b style="color:#4ecdc4">✓ 满足</b>':'<b style="color:#ff6b6b">✗ 超筋</b>'}</span>`;
+  if (status === 'ok') {
+    html += `<span></span>`;
+    html += `<span>④ x = ξ·h₀ = ${ξ_val.toFixed(4)} × ${h0} = <b style="color:#ffd700">${x_val.toFixed(1)} mm</b></span>`;
+    html += `<span></span>`;
+    html += `<span>⑤ Aₛ = α₁·f_c·b·x / f_y</span>`;
+    html += `<span>　 = ${α1} × ${fc} × ${inp.b} × ${x_val.toFixed(1)} / ${fy}</span>`;
+    html += `<span>　 = <b style="color:#ffd700">${As_req.toFixed(1)} mm²</b></span>`;
+    html += `<span></span>`;
+    html += `<span>⑥ 最小配筋率 ρ_min = Max(0.2%, 0.45·f_t/f_y)</span>`;
+    html += `<span>   = Max(0.002, 0.45×${ft}/${fy}) = <b style="color:#ffd700">${(ρ_min*100).toFixed(2)}%</b></span>`;
+    html += `<span>⑦ A_s,min = ρ_min·b·h₀ = ${(ρ_min*100).toFixed(2)}% × ${inp.b} × ${h0} = <b style="color:#ffd700">${As_min.toFixed(1)} mm²</b></span>`;
+    html += `<span>⑧ 实际配筋率 ρ = As/(b·h₀) = ${As_req.toFixed(1)}/(${inp.b}×${h0}) = <b style="color:${ρ>=ρ_min?'#4ecdc4':'#ff6b6b'}">${(ρ*100).toFixed(2)}%</b></span>`;
+  }
+  html += `</div>`;
+
+  html += `<div style="margin:16px 0;font-size:14px;color:#ffd700;font-weight:700;">三、斜截面受剪承载力计算（箍筋）</div>`;
+  html += `<div class="formula-box">`;
+  html += `<span>① 截面验算：0.25β_c·f_c·b·h₀</span>`;
+  html += `<span>　 = 0.25 × ${conc.βc} × ${fc} × ${inp.b} × ${h0}</span>`;
+  html += `<span>　 = <b style="color:#ffd700">${Vu_max.toFixed(0)} N</b> = ${(Vu_max/1000).toFixed(1)} kN</span>`;
+  html += `<span>　 V = ${(V_N/1000).toFixed(1)} kN  →  ${V_N <= Vu_max ? '<b style="color:#4ecdc4">✓ 截面满足</b>' : '<b style="color:#ff6b6b">✗ 截面不足</b>'}</span>`;
+  html += `<span></span>`;
+  html += `<span>② 混凝土抗剪承载力 V_c = 0.7·f_t·b·h₀</span>`;
+  html += `<span>　 = 0.7 × ${ft} × ${inp.b} × ${h0}</span>`;
+  html += `<span>　 = <b style="color:#ffd700">${Vc.toFixed(0)} N</b> = ${(Vc/1000).toFixed(1)} kN</span>`;
+  if (shearStatus === 'constr') {
+    html += `<span></span>`;
+    html += `<span>③ V = ${(V_N/1000).toFixed(1)} kN ≤ V_c = ${(Vc/1000).toFixed(1)} kN</span>`;
+    html += `<span>　 <b style="color:#45a7ff">→ 按构造配置箍筋即可</b></span>`;
+  } else if (shearStatus === 'ok') {
+    html += `<span></span>`;
+    html += `<span>③ V > V_c，需计算配箍：</span>`;
+    html += `<span>　 Aₛᵥ/s = (V − 0.7·f_t·b·h₀) / (f_yv·h₀)</span>`;
+    html += `<span>　 = (${V_N.toFixed(0)} − ${Vc.toFixed(0)}) / (${fyv} × ${h0})</span>`;
+    html += `<span>　 = <b style="color:#ffd700">${Asv_s.toFixed(4)} mm²/mm</b></span>`;
+  }
+  html += `</div>`;
+  document.getElementById('processContent').innerHTML = html;
+}
+
+function renderResult(inp, conc, steelL, steelS, h0, As_req, As_min, ρ, ρ_min, ξ_val, ξb, fy,
+    status, statusMsg, Vc, Vu_max, Asv_s, shearStatus, shearMsg, V_N) {
+  let html = '';
+  html += `<div style="font-size:14px;color:#8899aa;margin-bottom:8px;">▶ 正截面受弯承载力（纵筋）</div>`;
+  if (status === 'ok') {
+    const reqAs = Math.max(As_req, As_min);
+    html += `<div class="result-item ${reqAs===As_req?'success':'info'}"><span class="label">计算所需 Aₛ</span><span class="value">${As_req.toFixed(1)} mm²</span></div>`;
+    html += `<div class="result-item info"><span class="label">最小配筋面积 A_s,min</span><span class="value">${As_min.toFixed(1)} mm²</span></div>`;
+    html += `<div class="result-item ${ρ>=ρ_min?'success':'warning'}"><span class="label">配筋率 ρ</span><span class="value">${(ρ*100).toFixed(2)}%  ${ρ>=ρ_min?'✓':'⚠ 不满足'}</span></div>`;
+    html += `<div class="result-item info"><span class="label">最小配筋率 ρ_min</span><span class="value">${(ρ_min*100).toFixed(2)}%</span></div>`;
+    html += `<div class="result-item info"><span class="label">相对受压区高度 ξ</span><span class="value">${ξ_val.toFixed(4)} ${ξ_val<=ξb?'✓':'⚠'}</span></div>`;
+    html += `<div class="result-item info"><span class="label">界限相对受压区高度 ξ_b</span><span class="value">${ξb}</span></div>`;
+    html += `<div class="result-item success"><span class="label">最终配筋面积 (取大值)</span><span class="value">${reqAs.toFixed(1)} mm²</span></div>`;
+  } else {
+    html += `<div class="result-item warning"><span class="label">⚠ 状态</span><span class="value">${statusMsg}</span></div>`;
+  }
+  html += `<div style="font-size:14px;color:#8899aa;margin:20px 0 8px;">▶ 斜截面受剪承载力（箍筋）</div>`;
+  html += `<div class="result-item info"><span class="label">截面限制条件 0.25β_c·f_c·b·h₀</span><span class="value">${(Vu_max/1000).toFixed(1)} kN</span></div>`;
+  html += `<div class="result-item info"><span class="label">混凝土抗剪承载力 V_c</span><span class="value">${(Vc/1000).toFixed(1)} kN</span></div>`;
+  html += `<div class="result-item ${shearStatus==='size_err'?'warning':'success'}"><span class="label">截面尺寸验算</span><span class="value">${V_N<=Vu_max?'✓ 满足':'⚠ 不满足'}</span></div>`;
+  if (shearStatus === 'constr') {
+    html += `<div class="result-item info"><span class="label">配箍方式</span><span class="value">构造配箍</span></div>`;
+    html += `<div class="result-item success"><span class="label">建议 Aₛᵥ/s_min</span><span class="value">按构造 ≥ 0.24·f_t/f_yv</span></div>`;
+  } else if (shearStatus === 'ok') {
+    html += `<div class="result-item info"><span class="label">计算 Aₛᵥ/s</span><span class="value">${Asv_s.toFixed(4)} mm²/mm</span></div>`;
+    html += `<div class="result-item success"><span class="label">每延米 Aₛᵥ</span><span class="value">${(Asv_s*1000).toFixed(1)} mm²/m</span></div>`;
+  } else {
+    html += `<div class="result-item warning"><span class="label">⚠ 状态</span><span class="value">${shearMsg}</span></div>`;
+  }
+  document.getElementById('resultContent').innerHTML = html;
+  if (status === 'ok') renderRebarScheme(As_req, As_min, inp.b, h0, Asv_s, shearStatus, ρ, ρ_min, ξ_val, ξb, fy);
+}
+
+// ==================== 安全性 & 经济性评价 ====================
+function renderEvaluation(As_req, As_min, b, h0, ρ, ρ_min, ξ_val, ξb, fy) {
+  const reqAs = Math.max(As_req, As_min);
+  const actualRho = reqAs / (b * h0) * 100;
+  const ρ_econ_min = 0.6;   // 经济配筋率下限
+  const ρ_econ_opt = 1.2;   // 经济配筋率最优
+  const ρ_econ_max = 1.8;   // 经济配筋率上限
+
+  let html = '';
+  html += `<div style="font-size:14px;color:#ffd700;font-weight:600;margin-bottom:12px;">📊 安全性与经济性评价</div>`;
+
+  // 安全性评价表
+  html += `<table class="rebar-table"><thead><tr><th>评价项</th><th>计算值</th><th>限值</th><th>状态</th></tr></thead><tbody>`;
+
+  // 1. 少筋验算
+  const rhoCheck = actualRho >= ρ_min * 100;
+  html += `<tr>
+    <td>最小配筋率</td>
+    <td>ρ = ${actualRho.toFixed(2)}%</td>
+    <td>ρ_min = ${(ρ_min*100).toFixed(2)}%</td>
+    <td style="color:${rhoCheck?'#4ecdc4':'#ff6b6b'};font-weight:700;">${rhoCheck?'✓ 适筋':'✗ 少筋'}</td>
+  </tr>`;
+
+  // 2. 超筋验算
+  const overCheck = ξ_val <= ξb;
+  html += `<tr>
+    <td>界限受压区高度</td>
+    <td>ξ = ${ξ_val.toFixed(4)}</td>
+    <td>ξ_b = ${ξb}</td>
+    <td style="color:${overCheck?'#4ecdc4':'#ff6b6b'};font-weight:700;">${overCheck?'✓ 适筋':'✗ 超筋'}</td>
+  </tr>`;
+
+  // 3. ξ/ξb 利用率
+  const xiRatio = ξ_val / ξb * 100;
+  let xiStatus, xiColor;
+  if (xiRatio < 50) { xiStatus = '偏保守'; xiColor = '#45a7ff'; }
+  else if (xiRatio < 75) { xiStatus = '合理利用'; xiColor = '#4ecdc4'; }
+  else if (xiRatio < 90) { xiStatus = '充分利用'; xiColor = '#ffd700'; }
+  else { xiStatus = '接近界限'; xiColor = '#ff6b6b'; }
+  html += `<tr>
+    <td>承载力利用率 ξ/ξ_b</td>
+    <td>${xiRatio.toFixed(1)}%</td>
+    <td>建议 50%~85%</td>
+    <td style="color:${xiColor};font-weight:700;">${xiStatus}</td>
+  </tr>`;
+
+  // 4. 经济配筋率评价
+  let econStatus, econColor;
+  if (actualRho < ρ_min * 100) { econStatus = '少筋，不安全'; econColor = '#ff6b6b'; }
+  else if (actualRho < ρ_econ_min) { econStatus = '偏低，尚可'; econColor = '#ffaa00'; }
+  else if (actualRho <= ρ_econ_max) { econStatus = '经济合理 ✓'; econColor = '#4ecdc4'; }
+  else { econStatus = '偏高，费钢'; econColor = '#ff6b6b'; }
+  html += `<tr>
+    <td>经济配筋率</td>
+    <td>ρ = ${actualRho.toFixed(2)}%</td>
+    <td>${ρ_econ_min}% ~ ${ρ_econ_max}%</td>
+    <td style="color:${econColor};font-weight:700;">${econStatus}</td>
+  </tr>`;
+  html += `</tbody></table>`;
+
+  // 综合评定
+  html += `<div style="margin-top:10px;padding:12px;background:rgba(0,0,0,0.2);border-radius:10px;display:flex;gap:16px;flex-wrap:wrap;">`;
+  html += `<div style="flex:1;min-width:150px;">`;
+  html += `<div style="font-size:12px;color:#8899aa;">安全性</div>`;
+  if (!rhoCheck) {
+    html += `<div style="font-size:20px;color:#ff6b6b;font-weight:800;">🔴 不合格</div><div style="font-size:11px;color:#ff6b6b;">少筋破坏，需加大配筋</div>`;
+  } else if (!overCheck) {
+    html += `<div style="font-size:20px;color:#ff6b6b;font-weight:800;">🔴 不合格</div><div style="font-size:11px;color:#ff6b6b;">超筋破坏，需加大截面</div>`;
+  } else {
+    html += `<div style="font-size:20px;color:#4ecdc4;font-weight:800;">🟢 合格</div><div style="font-size:11px;color:#4ecdc4;">适筋梁，延性破坏有预兆</div>`;
+  }
+  html += `</div>`;
+  html += `<div style="flex:1;min-width:150px;">`;
+  html += `<div style="font-size:12px;color:#8899aa;">经济性</div>`;
+  if (actualRho < ρ_econ_min && actualRho >= ρ_min*100) {
+    html += `<div style="font-size:20px;color:#ffaa00;font-weight:800;">🟡 偏保守</div><div style="font-size:11px;color:#ffaa00;">富余较大，可优化截面</div>`;
+  } else if (actualRho <= ρ_econ_max && actualRho >= ρ_min*100) {
+    html += `<div style="font-size:20px;color:#4ecdc4;font-weight:800;">🟢 经济</div><div style="font-size:11px;color:#4ecdc4;">配筋率在经济范围内</div>`;
+  } else if (actualRho > ρ_econ_max) {
+    html += `<div style="font-size:20px;color:#ff6b6b;font-weight:800;">🟠 费钢</div><div style="font-size:11px;color:#ff6b6b;">可加大截面或提高混凝土等级</div>`;
+  }
+  html += `</div>`;
+  html += `<div style="flex:1;min-width:150px;">`;
+  html += `<div style="font-size:12px;color:#8899aa;">截面利用率</div>`;
+  html += `<div style="font-size:20px;color:${xiColor};font-weight:800;">${xiRatio.toFixed(0)}%</div>`;
+  html += `<div style="font-size:11px;color:#8899aa;">ξ/ξ_b，${xiStatus}</div>`;
+  html += `</div>`;
+  html += `</div>`;
+
+  return html;
+}
+
+function renderRebarScheme(As_req, As_min, b, h0, Asv_s, shearStatus, ρ, ρ_min, ξ_val, ξb, fy) {
+  const reqAs = Math.max(As_req, As_min);
+  let html = '';
+
+  // ===== 安全性 & 经济性评价 =====
+  html += renderEvaluation(As_req, As_min, b, h0, ρ, ρ_min, ξ_val, ξb, fy);
+
+  // ===== 纵筋方案 =====
+  html += `<div style="font-size:14px;color:#ffd700;font-weight:600;margin:20px 0 10px;">🔩 纵向钢筋方案 (所需 ≥ ${reqAs.toFixed(1)} mm²)</div>`;
+  html += `<table class="rebar-table"><thead><tr><th>评级</th><th>直径</th><th>根数</th><th>实配面积 mm²</th><th>实配率</th><th>余量</th><th>经济性</th></tr></thead><tbody>`;
+  const diameters = [10,12,14,16,18,20,22,25,28,32];
+  let sc = 0;
+  const schemes = [];
+  for (const d of diameters) {
+    const a1 = REBAR_AREA[d];
+    const n = Math.ceil(reqAs / a1);
+    if (n > 12 || n < 2) continue; // 不少于2根，不多于12根
+    const actual = n * a1;
+    const surplus = (actual - reqAs) / reqAs * 100;
+    const actualRho = actual / (b * h0) * 100;
+    schemes.push({ d, n, actual, actualRho, surplus });
+  }
+  // 按余量排序（余量越小经济性越好）
+  schemes.sort((a,b) => a.surplus - b.surplus);
+  for (const s of schemes) {
+    sc++;
+    // 评级
+    let grade, gradeColor;
+    if (s.surplus <= 5) { grade = '⭐⭐⭐'; gradeColor = '#4ecdc4'; }
+    else if (s.surplus <= 15) { grade = '⭐⭐'; gradeColor = '#ffd700'; }
+    else { grade = '⭐'; gradeColor = '#ffaa00'; }
+    // 经济性
+    let eco, ecoColor;
+    if (s.surplus <= 5) { eco = '优秀'; ecoColor = '#4ecdc4'; }
+    else if (s.surplus <= 15) { eco = '良好'; ecoColor = '#ffd700'; }
+    else if (s.surplus <= 30) { eco = '一般'; ecoColor = '#ffaa00'; }
+    else { eco = '偏浪费'; ecoColor = '#ff6b6b'; }
+    html += `<tr>
+      <td style="color:${gradeColor};">${grade}</td>
+      <td>Φ${s.d}</td>
+      <td class="highlight">${s.n}根</td>
+      <td>${s.actual.toFixed(1)}</td>
+      <td>${s.actualRho.toFixed(2)}%</td>
+      <td>+${s.surplus.toFixed(1)}%</td>
+      <td style="color:${ecoColor};">${eco}</td>
+    </tr>`;
+    if (sc >= 8) break;
+  }
+  html += `</tbody></table>`;
+  const rowCount1 = Math.floor((b - 2*35 - 2*10) / 25) + 1;
+  html += `<div class="note">💡 截面宽${b}mm，按保护层35mm、箍筋Φ8、净距25mm估算，可单排放置约 ${Math.max(1,rowCount1)} 根钢筋。根数超出时需双排布置（h₀ 减小，需重新验算）。</div>`;
+
+  html += `<div style="font-size:13px;color:#8899aa;margin:16px 0 8px;">箍筋方案</div>`;
+  html += `<table class="rebar-table"><thead><tr><th>方案</th><th>直径</th><th>肢数</th><th>间距 mm</th><th>实配 Aₛᵥ/s</th></tr></thead><tbody>`;
+  const sDias = [6,8,10]; const legs = [2,4]; let sc2 = 0;
+  for (const leg of legs) {
+    for (const d of sDias) {
+      const area = REBAR_AREA[d] * leg;
+      let sp;
+      if (shearStatus === 'constr') {
+        sp = Math.floor(Math.min(200, h0/2) / 50) * 50;
+        if (sp < 50) sp = 50;
+      } else {
+        sp = area / Asv_s;
+        sp = Math.floor(sp / 10) * 10;
+        if (sp < 50) sp = 50; if (sp > 300) sp = 300;
+      }
+      sc2++;
+      html += `<tr><td>方案${sc2}</td><td>Φ${d}</td><td class="highlight">${leg}肢</td><td>@${sp}</td><td>${(area/sp).toFixed(4)}</td></tr>`;
+      if (sc2 >= 6) break;
+    }
+    if (sc2 >= 6) break;
+  }
+  html += `</tbody></table>`;
+  html += `<div class="note">💡 箍筋加密区按规范：距支座范围取 1.5h，间距 ≤ h/4 且 ≤ 100mm。</div>`;
+  document.getElementById('rebarScheme').innerHTML = html;
+}
+
+function toggleLoadRef() {
+  const panel = document.getElementById('loadRefPanel');
+  if (panel.style.display === 'none' || panel.style.display === '') {
+    panel.style.display = 'block';
+    updateRefCalc();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function updateRefCalc() {
+  const fd = parseFloat(document.getElementById('refFloorDead').value) || 0;
+  const tw = parseFloat(document.getElementById('refTribWidth').value) || 0;
+  const wl = parseFloat(document.getElementById('refWallLoad').value) || 0;
+  document.getElementById('refGkResult').textContent = (fd * tw + wl).toFixed(2);
+
+  const fl = parseFloat(document.getElementById('refFloorLive').value) || 0;
+  const tw2 = parseFloat(document.getElementById('refTribWidth2').value) || 0;
+  document.getElementById('refQkResult').textContent = (fl * tw2).toFixed(2);
+}
+
+function applyRefGk() {
+  const val = parseFloat(document.getElementById('refGkResult').textContent) || 0;
+  document.getElementById('gk').value = val.toFixed(2);
+  calcLoads();
+}
+
+function applyRefQk() {
+  const val = parseFloat(document.getElementById('refQkResult').textContent) || 0;
+  document.getElementById('qk').value = val.toFixed(2);
+  calcLoads();
+}
+
+// ==================== 复位与示例 ====================
+function resetForm() {
+  document.getElementById('spanL').value = 6.0;
+  document.getElementById('includeSelfWeight').checked = true;
+  document.getElementById('gk').value = 8.0;
+  document.getElementById('qk').value = 5.0;
+  document.getElementById('pointLoadBody').innerHTML = '';
+  pointLoadId = 0;
+  storedPointLoads = [];
+  document.getElementById('b').value = 250;
+  document.getElementById('h').value = 500;
+  document.getElementById('as').value = 35;
+  document.getElementById('M').value = 120;
+  document.getElementById('V').value = 100;
+  document.getElementById('concreteGrade').value = 'C30';
+  document.getElementById('steelGradeLong').value = 'HRB400';
+  document.getElementById('steelGradeStirrup').value = 'HPB300';
+  document.getElementById('resultCard').classList.remove('show');
+  document.getElementById('processCard').style.display = 'none';
+  document.getElementById('formulaCard').style.display = 'none';
+  calcLoads();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function loadExample1() {
+  // 小跨度住宅梁
+  document.getElementById('spanL').value = 4.5;
+  document.getElementById('includeSelfWeight').checked = true;
+  document.getElementById('gk').value = 6.0;
+  document.getElementById('qk').value = 3.5;
+  document.getElementById('pointLoadBody').innerHTML = '';
+  pointLoadId = 0;
+  storedPointLoads = [];
+  document.getElementById('b').value = 200;
+  document.getElementById('h').value = 450;
+  document.getElementById('as').value = 35;
+  document.getElementById('concreteGrade').value = 'C25';
+  document.getElementById('steelGradeLong').value = 'HRB400';
+  document.getElementById('steelGradeStirrup').value = 'HPB300';
+  calcLoads();
+  // 自动应用
+  const r = calcLoads();
+  if (r) { document.getElementById('M').value = r.M.toFixed(2); document.getElementById('V').value = r.V.toFixed(2); }
+  calculate();
+}
+
+function loadExample2() {
+  // 大跨度框架梁 + 集中力
+  document.getElementById('spanL').value = 7.2;
+  document.getElementById('includeSelfWeight').checked = true;
+  document.getElementById('gk').value = 12.0;
+  document.getElementById('qk').value = 8.0;
+  document.getElementById('pointLoadBody').innerHTML = '';
+  pointLoadId = 0;
+  storedPointLoads = [];
+  document.getElementById('b').value = 300;
+  document.getElementById('h').value = 650;
+  document.getElementById('as').value = 40;
+  document.getElementById('concreteGrade').value = 'C30';
+  document.getElementById('steelGradeLong').value = 'HRB400';
+  document.getElementById('steelGradeStirrup').value = 'HPB300';
+  // 添加一个跨中集中力
+  addPointLoad('live', 20, 3.6);
+  calcLoads();
+  const r = calcLoads();
+  if (r) { document.getElementById('M').value = r.M.toFixed(2); document.getElementById('V').value = r.V.toFixed(2); }
+  calculate();
+}
+
+// 页面初始化
+window.onload = () => {
+  calcLoads();
+  // 初次加载自动应用并计算
+  setTimeout(() => {
+    const r = calcLoads();
+    if (r) { document.getElementById('M').value = r.M.toFixed(2); document.getElementById('V').value = r.V.toFixed(2); }
+    calculate();
+  }, 100);
+};
+</script>
+</body>
+</html>
