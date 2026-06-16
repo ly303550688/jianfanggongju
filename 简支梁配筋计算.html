@@ -710,7 +710,7 @@ function renderResult(inp, conc, steelL, steelS, h0, As_req, As_min, ρ, ρ_min,
     html += `<div class="result-item warning"><span class="label">⚠ 状态</span><span class="value">${shearMsg}</span></div>`;
   }
   document.getElementById('resultContent').innerHTML = html;
-  if (status === 'ok') renderRebarScheme(As_req, As_min, inp.b, h0, Asv_s, shearStatus, ρ, ρ_min, ξ_val, ξb, fy);
+  if (status === 'ok') renderRebarScheme(As_req, As_min, inp.b, inp.h, h0, inp.a_s, Asv_s, shearStatus, ρ, ρ_min, ξ_val, ξb, fy);
 }
 
 // ==================== 安全性 & 经济性评价 ====================
@@ -805,15 +805,16 @@ function renderEvaluation(As_req, As_min, b, h0, ρ, ρ_min, ξ_val, ξb, fy) {
   return html;
 }
 
-function renderRebarScheme(As_req, As_min, b, h0, Asv_s, shearStatus, ρ, ρ_min, ξ_val, ξb, fy) {
+function renderRebarScheme(As_req, As_min, b, h, h0, a_s, Asv_s, shearStatus, ρ, ρ_min, ξ_val, ξb, fy) {
   const reqAs = Math.max(As_req, As_min);
   let html = '';
 
   // ===== 安全性 & 经济性评价 =====
   html += renderEvaluation(As_req, As_min, b, h0, ρ, ρ_min, ξ_val, ξb, fy);
 
-  // ===== 纵筋方案 =====
-  html += `<div style="font-size:14px;color:#ffd700;font-weight:600;margin:20px 0 10px;">🔩 纵向钢筋方案 (所需 ≥ ${reqAs.toFixed(1)} mm²)</div>`;
+  // ===== 底筋方案（正弯矩区，受拉） =====
+  html += `<div style="font-size:14px;color:#4ecdc4;font-weight:600;margin:20px 0 4px;">🔻 底筋（跨中正弯矩受拉钢筋）</div>`;
+  html += `<div style="font-size:12px;color:#8899aa;margin-bottom:8px;">简支梁底部受拉，由正截面受弯承载力计算 (所需 ≥ ${reqAs.toFixed(1)} mm²)</div>`;
   html += `<table class="rebar-table"><thead><tr><th>评级</th><th>直径</th><th>根数</th><th>实配面积 mm²</th><th>实配率</th><th>余量</th><th>经济性</th></tr></thead><tbody>`;
   const diameters = [10,12,14,16,18,20,22,25,28,32];
   let sc = 0;
@@ -821,22 +822,19 @@ function renderRebarScheme(As_req, As_min, b, h0, Asv_s, shearStatus, ρ, ρ_min
   for (const d of diameters) {
     const a1 = REBAR_AREA[d];
     const n = Math.ceil(reqAs / a1);
-    if (n > 12 || n < 2) continue; // 不少于2根，不多于12根
+    if (n > 12 || n < 2) continue;
     const actual = n * a1;
     const surplus = (actual - reqAs) / reqAs * 100;
     const actualRho = actual / (b * h0) * 100;
     schemes.push({ d, n, actual, actualRho, surplus });
   }
-  // 按余量排序（余量越小经济性越好）
   schemes.sort((a,b) => a.surplus - b.surplus);
   for (const s of schemes) {
     sc++;
-    // 评级
     let grade, gradeColor;
     if (s.surplus <= 5) { grade = '⭐⭐⭐'; gradeColor = '#4ecdc4'; }
     else if (s.surplus <= 15) { grade = '⭐⭐'; gradeColor = '#ffd700'; }
     else { grade = '⭐'; gradeColor = '#ffaa00'; }
-    // 经济性
     let eco, ecoColor;
     if (s.surplus <= 5) { eco = '优秀'; ecoColor = '#4ecdc4'; }
     else if (s.surplus <= 15) { eco = '良好'; ecoColor = '#ffd700'; }
@@ -851,11 +849,81 @@ function renderRebarScheme(As_req, As_min, b, h0, Asv_s, shearStatus, ρ, ρ_min
       <td>+${s.surplus.toFixed(1)}%</td>
       <td style="color:${ecoColor};">${eco}</td>
     </tr>`;
-    if (sc >= 8) break;
+    if (sc >= 6) break;
   }
   html += `</tbody></table>`;
-  const rowCount1 = Math.floor((b - 2*35 - 2*10) / 25) + 1;
-  html += `<div class="note">💡 截面宽${b}mm，按保护层35mm、箍筋Φ8、净距25mm估算，可单排放置约 ${Math.max(1,rowCount1)} 根钢筋。根数超出时需双排布置（h₀ 减小，需重新验算）。</div>`;
+  const rowCount1 = Math.floor((b - 2*a_s - 2*10) / 25) + 1;
+  html += `<div class="note">💡 截面宽${b}mm，按保护层${a_s}mm、箍筋Φ8、净距25mm估算，可单排放置约 ${Math.max(1,rowCount1)} 根底筋。超出时需双排布置（h₀ 减小，需重新验算）。</div>`;
+
+  // ===== 面筋方案（负弯矩区 / 架立筋） =====
+  html += `<div style="font-size:14px;color:#ffaa00;font-weight:600;margin:20px 0 4px;">🔺 面筋（梁顶架立筋 / 支座负筋）</div>`;
+  html += `<div style="font-size:12px;color:#8899aa;margin-bottom:8px;">简支梁顶部受压，理论上不需受力钢筋，但需配置架立筋（≥2根）以满足构造要求</div>`;
+  html += `<table class="rebar-table"><thead><tr><th>方案</th><th>直径</th><th>根数</th><th>面积 mm²</th><th>占底筋比例</th><th>建议</th></tr></thead><tbody>`;
+  const topDias = [10,12,14,16];
+  let topSc = 0;
+  const bestBottom = schemes[0];
+  for (const d of topDias) {
+    for (const n of [2, 3]) {
+      topSc++;
+      const area = REBAR_AREA[d] * n;
+      const ratio = bestBottom ? (area / bestBottom.actual * 100) : 0;
+      let suggest;
+      if (h <= 400) suggest = '小梁可用';
+      else if (ratio >= 20 && ratio <= 40) suggest = '✓ 推荐';
+      else if (ratio < 20) suggest = '偏小';
+      else suggest = '偏大';
+      html += `<tr>
+        <td>面${topSc}</td>
+        <td>Φ${d}</td>
+        <td class="highlight">${n}根</td>
+        <td>${area.toFixed(1)}</td>
+        <td>${ratio.toFixed(0)}%</td>
+        <td style="color:${ratio>=20&&ratio<=40?'#4ecdc4':'#8899aa'};">${suggest}</td>
+      </tr>`;
+      if (topSc >= 5) break;
+    }
+    if (topSc >= 5) break;
+  }
+  html += `</tbody></table>`;
+  html += `<div class="note">💡 简支梁顶部为受压区，面筋主要起架立和抗裂作用。按规范应设置≥2根架立筋，直径≥10mm。实际工程中常取2Φ10或2Φ12。</div>`;
+
+  // ===== 腰筋方案（侧面构造钢筋） =====
+  const hw = h0 - a_s; // 腹板高度 ≈ h0
+  const needWeb = h >= 450;
+  html += `<div style="font-size:14px;color:${needWeb?'#ff6b6b':'#667788'};font-weight:600;margin:20px 0 4px;">🟰 腰筋（侧面构造钢筋）${!needWeb?' — 可不设':''}</div>`;
+  if (needWeb) {
+    const sideAs = 0.001 * b * hw * 2; // 每侧 0.1% * b * hw，两侧共
+    const maxSpacing = 200;
+    const sideCount = Math.max(2, Math.ceil(hw / maxSpacing));
+    html += `<div style="font-size:12px;color:#8899aa;margin-bottom:8px;">h = ${h}mm ≥ 450mm，按 GB 50010 需设腰筋：腹板高 hw ≈ ${hw.toFixed(0)}mm，间距≤200mm，每侧≥0.1%×b×hw = ${(0.001*b*hw).toFixed(0)}mm²</div>`;
+    html += `<table class="rebar-table"><thead><tr><th>方案</th><th>直径</th><th>每侧根数</th><th>每侧面积 mm²</th><th>间距 mm</th><th>状态</th></tr></thead><tbody>`;
+    const webDias = [10,12,14];
+    let webSc = 0;
+    for (const d of webDias) {
+      const a1 = REBAR_AREA[d];
+      const needPerSide = Math.max(2, Math.ceil((0.001 * b * hw) / a1));
+      for (const n of [sideCount, sideCount + 1]) {
+        webSc++;
+        const actual = n * a1;
+        const sp = Math.floor(hw / (n + 1));
+        const ok = actual >= 0.001 * b * hw && sp <= maxSpacing;
+        html += `<tr>
+          <td>腰${webSc}</td>
+          <td>Φ${d}</td>
+          <td class="highlight">${n}根</td>
+          <td>${actual.toFixed(1)}</td>
+          <td>${sp}</td>
+          <td style="color:${ok?'#4ecdc4':'#ffaa00'};">${ok?'✓ 满足':'⚠ 不足'}</td>
+        </tr>`;
+        if (webSc >= 4) break;
+      }
+      if (webSc >= 4) break;
+    }
+    html += `</tbody></table>`;
+    html += `<div class="note">💡 腰筋沿梁两侧对称配置，用拉筋联系（拉筋直径≥6mm，间距为箍筋间距的2倍）。每侧纵向构造钢筋面积 ≥ 0.1% × b × hw。</div>`;
+  } else {
+    html += `<div class="note">💡 梁高 h = ${h}mm < 450mm，按规范可不设置腰筋。如梁侧有集中荷载或抗扭需要，可酌情增设。</div>`;
+  }
 
   html += `<div style="font-size:13px;color:#8899aa;margin:16px 0 8px;">箍筋方案</div>`;
   html += `<table class="rebar-table"><thead><tr><th>方案</th><th>直径</th><th>肢数</th><th>间距 mm</th><th>实配 Aₛᵥ/s</th></tr></thead><tbody>`;
